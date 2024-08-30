@@ -1,0 +1,158 @@
+# MUTE SYSTEM!!!
+
+command /mute <player> [<text>]:
+    permission: server.mute
+    usage: /mute <player> [reason]
+    trigger:
+        if arg-1 is set:
+            if arg-1 is online:
+                if arg-1 doesn't have permission "server.mute.bypass":
+                    set {muted::%arg-1's uuid%} to true
+                    set {mutedname::%arg-1's uuid%} to "%arg-1%" # Store player name
+                    if arg-2 is set:
+                        set {mutereason::%arg-1's uuid%} to arg-2
+                        broadcast "&7[&brChat&7] &c%arg-1% has been muted by %player%. Reason: &f%arg-2%"
+                    else:
+                        delete {mutereason::%arg-1's uuid%}
+                        broadcast "&7[&brChat&7] &c%arg-1% has been muted by %player%."
+                    send "&7[&brChat&7] &fYou have been server muted." to arg-1
+                else:
+                    send "&7[&brChat&7] &cYou cannot mute this player." to player
+            else:
+                send "&7[&brChat&7] &cThe specified player is not online." to player
+        else:
+            send "&7[&brChat&7] &cPlease specify a player to mute." to player
+
+command /unmute <player>:
+    permission: server.unmute
+    usage: /unmute <player>
+    trigger:
+        if arg-1 is set:
+            if {muted::%arg-1's uuid%} is true:
+                delete {muted::%arg-1's uuid%}
+                delete {mutereason::%arg-1's uuid%}
+                broadcast "&7[&brChat&7] &a%arg-1% has been unmuted by %player%."
+                send "&7[&brChat&7] &fYou have been unmuted." to arg-1
+            else:
+                send "&7[&brChat&7] &c%arg-1% is not muted." to player
+        else:
+            send "&7[&brChat&7] &cPlease specify a player to unmute." to player
+
+on chat:
+    if {muted::%player's uuid%} is true:
+        cancel event
+        if {mutereason::%player's uuid%} is set:
+            send "&7[&brChat&7] &fYou are muted. Reason: &c%{mutereason::%player's uuid%}%" to player
+        else:
+            send "&7[&brChat&7] &fYou are muted." to player
+
+# KICK SYSTEM!!!
+
+command /kick <player> [<text>]:
+    permission: server.kick
+    usage: /kick <player> [reason]
+    trigger:
+        if arg-1 is set:
+            if arg-1 is online:
+                if arg-1 doesn't have permission "server.kick.bypass":
+                    if arg-2 is set:
+                        kick arg-1 due to "&7[&brChat&7] &cYou have been kicked by %player%. Reason: &f%arg-2%"
+                        broadcast "&7[&brChat&7] &c%arg-1% has been kicked by %player%. Reason: &f%arg-2%"
+                    else:
+                        kick arg-1 due to "&7[&brChat&7] &cYou have been kicked by %player%."
+                        broadcast "&7[&brChat&7] &c%arg-1% has been kicked by %player%."
+                else:
+                    send "&7[&brChat&7] &cYou cannot kick this player." to player
+            else:
+                send "&7[&brChat&7] &cThe specified player is not online." to player
+        else:
+            send "&7[&brChat&7] &cPlease specify a player to kick." to player
+
+# BAN SYSTEM!!!
+
+command /ban <offline player> [<text>]:
+    permission: server.ban
+    usage: /ban <player> [reason]
+    trigger:
+        if arg-1 is set:
+            set {_uuid} to uuid of arg-1
+            set {bannedname::%{_uuid}%} to arg-1 # Store player name
+            if arg-1 doesn't have permission "server.ban.bypass":
+                set {banned::%{_uuid}%} to true
+                if arg-2 is set:
+                    set {banreason::%{_uuid}%} to arg-2
+                    broadcast "&7[&brChat&7] &c%arg-1% has been banned by %player%. Reason: &f%arg-2%"
+                    if arg-1 is online:
+                        kick arg-1 due to "&7[&brChat&7] &cYou have been banned. Reason: &f%arg-2%"
+                else:
+                    delete {banreason::%{_uuid}%}
+                    broadcast "&7[&brChat&7] &c%arg-1% has been banned by %player%."
+                    if arg-1 is online:
+                        kick arg-1 due to "&7[&brChat&7] &cYou have been banned."
+            else:
+                send "&7[&brChat&7] &cYou cannot ban this player." to player
+        else:
+            send "&7[&brChat&7] &cPlease specify a player to ban." to player
+
+command /unban <text>:
+    permission: server.unban
+    usage: /unban <player>
+    trigger:
+        if arg-1 is set:
+            set {_player} to arg-1 parsed as offline player
+            if {_player} is set:
+                set {_uuid} to uuid of {_player}
+                if {banned::%{_uuid}%} is true:
+                    delete {banned::%{_uuid}%}
+                    delete {banreason::%{_uuid}%}
+                    broadcast "&7[&brChat&7] &a%{_player}% has been unbanned by %player%."
+                else:
+                    send "&7[&brChat&7] &c%{_player}% is not banned." to player
+            else:
+                send "&7[&brChat&7] &cCould not find player with that name." to player
+        else:
+            send "&7[&brChat&7] &cPlease specify a player to unban." to player
+
+on connect:
+    set {_uuid} to uuid of player
+    if {banned::%{_uuid}%} is true:
+        if {banreason::%{_uuid}%} is set:
+            kick player due to "&7[&brChat&7] &cYou are banned from this server. Reason: &f%{banreason::%{_uuid}%}%"
+        else:
+            kick player due to "&7[&brChat&7] &cYou are banned from this server."
+
+
+
+# COMMANDS SYSTEM!!!
+
+command /rchat [<text>]:
+    trigger:
+        if arg-1 is "help":
+            send "&7[&brChat&7] &fAvailable commands:"
+            send "&7/rchat help &f- Show this help message"
+            send "&7/rchat banlist &f- Show list of banned players"
+            send "&7/rchat mutelist &f- Show list of muted players"
+            send "&7/ban <player> [reason] &f- Ban a player"
+            send "&7/unban <player> &f- Unban a player"
+            send "&7/mute <player> [reason] &f- Mute a player"
+            send "&7/unmute <player> &f- Unmute a player"
+        else if arg-1 is "banlist":
+            send "&7[&brChat&7] &fBanned players:"
+            loop {banned::*}:
+                set {_uuid} to loop-value
+                set {_player} to {bannedname::%{_uuid}%}
+                if {_player} is set:
+                    send "&7- &f%{_player}%"
+                else:
+                    send "&7- &f%{_uuid}% (name unknown)"
+        else if arg-1 is "mutelist":
+            send "&7[&brChat&7] &fMuted players:"
+            loop {muted::*}:
+                set {_uuid} to loop-value
+                set {_player} to {mutedname::%{_uuid}%}
+                if {_player} is set:
+                    send "&7- &f%{_player}%"
+                else:
+                    send "&7- &f%{_uuid}% (name unknown)"
+        else:
+            send "&7[&brChat&7] &cUnknown subcommand. Use /rchat help for a list of commands."
